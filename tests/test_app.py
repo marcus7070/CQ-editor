@@ -1,4 +1,5 @@
 import os.path as path
+from pathlib import Path
 import os, sys
 
 from multiprocessing import Process
@@ -12,6 +13,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QApplication
 
 from cq_editor.__main__ import MainWindow
 from cq_editor.widgets.editor import Editor
+from cq_editor.cq_utils import export
 
 code = \
 '''import cadquery as cq
@@ -823,3 +825,37 @@ def test_resize(main):
     editor.show()
     qtbot.wait(50)
 
+code_simple_step = \
+'''import cadquery as cq
+imported = cq.importers.importStep('shape.step')
+'''
+
+def test_relative_references(main):
+
+    # create code with a relative reference in a subdirectory
+    p = Path('test_relative_references')
+    p.mkdir(exist_ok=True)
+    p_code = p.joinpath('code.py')
+    p_code.write_text(code_simple_step)
+    # create the referenced step file
+    shape = cq.Workplane("XY").box(1, 1, 1)
+    p_step = p.joinpath('shape.step')
+    export(shape, "step", str(p_step))
+    # open code
+    qtbot, win = main
+    editor = win.components['editor']
+    editor.load_from_file(str(p_code))
+    # render
+    debugger = win.components['debugger']
+    debugger._actions['Run'][0].triggered.emit()
+    # assert no errors
+    traceback_view = win.components['traceback_viewer']
+    assert(traceback_view.current_exception.text() == '')
+    # assert one object has been rendered
+    obj_tree_comp = win.components['object_tree']
+    assert(obj_tree_comp.CQ.childCount() == 1)
+    # clean up
+    # the missing_ok=True argument has been added in python 3.8, include here when we move to >=3.8
+    p_code.unlink()  
+    p_step.unlink()
+    p.rmdir()
