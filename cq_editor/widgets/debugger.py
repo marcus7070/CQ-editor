@@ -1,4 +1,4 @@
-import sys, imp, os
+import sys, imp
 from enum import Enum, auto
 from imp import reload
 
@@ -177,14 +177,12 @@ class Debugger(QObject,ComponentMixin):
     def _exec(self, code, locals_dict, globals_dict):
 
         with ExitStack() as stack:
-            p = Path(self.parent().components['editor'].filename).parent
+            p = Path(self.parent().components['editor'].filename).dirname()
             if self.preferences['Add script dir to path'] and p:
                 sys.path.append(p)
                 stack.callback(sys.path.remove, p)
             if self.preferences['Change working dir to script dir'] and p:
-                old_wd = os.getcwd()
-                os.chdir(p)
-                stack.callback(os.chdir, old_wd)
+                stack.enter_context(p)
             exec(code, locals_dict, globals_dict)
 
     @pyqtSlot(bool)
