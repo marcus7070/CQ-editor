@@ -1,5 +1,4 @@
-import os.path as path
-from pathlib import Path
+from path import Path
 import os, sys
 
 from multiprocessing import Process
@@ -227,12 +226,12 @@ def test_export(main,mocker):
     #export STL
     mocker.patch.object(QFileDialog, 'getSaveFileName', return_value=('out.stl',''))
     obj_tree_comp._export_STL_action.triggered.emit()
-    assert(path.isfile('out.stl'))
+    assert(os.path.isfile('out.stl'))
 
     #export STEP
     mocker.patch.object(QFileDialog, 'getSaveFileName', return_value=('out.step',''))
     obj_tree_comp._export_STEP_action.triggered.emit()
-    assert(path.isfile('out.step'))
+    assert(os.path.isfile('out.step'))
 
     #clean
     os.remove('out.step')
@@ -834,17 +833,17 @@ def test_relative_references(main):
 
     # create code with a relative reference in a subdirectory
     p = Path('test_relative_references')
-    p.mkdir(exist_ok=True)
+    p.mkdir_()
     p_code = p.joinpath('code.py')
     p_code.write_text(code_simple_step)
     # create the referenced step file
     shape = cq.Workplane("XY").box(1, 1, 1)
     p_step = p.joinpath('shape.step')
-    export(shape, "step", str(p_step))
+    export(shape, "step", p_step)
     # open code
     qtbot, win = main
     editor = win.components['editor']
-    editor.load_from_file(str(p_code))
+    editor.load_from_file(p_code)
     # render
     debugger = win.components['debugger']
     debugger._actions['Run'][0].triggered.emit()
@@ -855,7 +854,6 @@ def test_relative_references(main):
     obj_tree_comp = win.components['object_tree']
     assert(obj_tree_comp.CQ.childCount() == 1)
     # clean up
-    # the missing_ok=True argument has been added in python 3.8, include here when we move to >=3.8
-    p_code.unlink()  
-    p_step.unlink()
-    p.rmdir()
+    p_code.remove_p()
+    p_step.remove_p()
+    p.rmdir_p()
